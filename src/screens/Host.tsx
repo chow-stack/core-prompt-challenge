@@ -162,7 +162,7 @@ export function HostStage({ gameId }: { gameId: string }) {
             <div className="lbl center">Join code</div>
             <div className="bigcode">{g.code}</div>
             <p className="center muted">Choose Join a live game and type the code, or scan this QR code.</p>
-            <QrCode text={link} />
+            <QrCode text={link} size={400} />
             <label htmlFor="link">Share link</label>
             <div className="row">
               <input id="link" value={link} readOnly onFocus={(e) => e.target.select()} />

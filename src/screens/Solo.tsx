@@ -19,6 +19,11 @@ export function Solo({ step, summary }: { step: number | null; summary: boolean 
   useEffect(() => {
     if (me) load();
   }, [me, load]);
+  // Pin "/play" to a concrete step so finishing a scenario shows its result instead of jumping ahead.
+  const firstOpen = progress ? progress.scenarios.findIndex((s) => !s.best) : -1;
+  useEffect(() => {
+    if (progress && !summary && step == null) navigate("/play?s=" + (Math.max(0, firstOpen) + 1), true);
+  }, [progress, summary, step, firstOpen]);
 
   if (me === undefined) return <p className="muted">Loading...</p>;
   if (me === null)
@@ -35,8 +40,8 @@ export function Solo({ step, summary }: { step: number | null; summary: boolean 
   if (!progress || scenarios.length < SC_COUNT) return <p className="muted">Loading your progress...</p>;
 
   if (summary) return <SoloSummary progress={progress} />;
-  const firstOpen = progress.scenarios.findIndex((s) => !s.best);
-  const i = step != null && step >= 0 && step < SC_COUNT ? step : Math.max(0, firstOpen);
+  if (step == null) return null;
+  const i = step >= 0 && step < SC_COUNT ? step : 0;
   return <SoloScenario key={i} i={i} progress={progress} reload={load} />;
 }
 

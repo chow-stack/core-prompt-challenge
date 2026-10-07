@@ -490,15 +490,16 @@ th.cur {
 }
 .pips {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
   margin: 0 0 16px;
 }
 .pip {
   font: inherit;
   font-size: 14px;
-  min-width: 44px;
+  min-width: 42px;
   min-height: 44px;
+  padding: 0 4px;
   border: 1.5px solid var(--rose);
   background: transparent;
   color: var(--m3);
@@ -515,7 +516,7 @@ th.cur {
   box-shadow: inset 0 0 0 1.5px var(--m2);
 }
 .pip.sum {
-  padding: 0 12px;
+  padding: 0 8px;
 }
 .wait {
   height: 5px;
@@ -638,6 +639,14 @@ ul.plain {
   margin-top: 14px;
   color: var(--m1);
 }
+.bigcode,
+.stage-chip,
+.stage-timer,
+.stage-count,
+.pip,
+td.n {
+  font-variant-numeric: lining-nums tabular-nums;
+}
 .bigcode {
   font-size: clamp(56px, 14vw, 140px);
   letter-spacing: 0.06em;
@@ -674,6 +683,7 @@ ul.plain {
   padding: 14px;
   margin: 12px 0;
   user-select: all;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 /* ---------- Host projector stage ---------- */
@@ -734,11 +744,22 @@ body.stage-mode {
   color: var(--ink);
   border-radius: 8px;
   padding: 22px 24px;
+  font-size: clamp(17px, 1.25vw, 26px);
   box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
 }
 .stage-card .muted,
 .stage-card .lbl {
   color: var(--m3);
+  font-size: 0.85em;
+}
+.stage-card h2 {
+  font-size: clamp(24px, 2vw, 44px);
+}
+.stage-card .count {
+  font-size: clamp(22px, 2.2vw, 48px);
+}
+.stage-card .qr {
+  max-width: min(420px, 100%);
 }
 .stage-lobby,
 .stage-play {
@@ -749,15 +770,25 @@ body.stage-mode {
 }
 @media (min-width: 960px) {
   .stage-lobby {
-    grid-template-columns: minmax(340px, 460px) 1fr;
+    grid-template-columns: minmax(360px, 42%) 1fr;
     align-items: start;
   }
+}
+@media (min-width: 1280px) {
   .stage-play {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
     align-items: start;
   }
 }
-.stage-card.join .bigcode {
+.stage-card.join .bigcode,
+.stage-chip,
+.stage-timer,
+.stage-count,
+.pip,
+td.n {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.bigcode {
   font-size: clamp(64px, 9vw, 160px);
 }
 .chips {
@@ -773,7 +804,7 @@ body.stage-mode {
   color: var(--cream);
   border-radius: 6px;
   padding: 8px 14px;
-  font-size: 20px;
+  font-size: clamp(18px, 1.5vw, 30px);
   font-weight: bold;
   animation: pop 0.25s ease-out;
 }
@@ -896,7 +927,8 @@ body.stage-mode {
   width: min(900px, 100%);
 }
 .podium .place {
-  flex: 1;
+  flex: 0 1 300px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -119,7 +119,7 @@ export function ResultView({ res, label = "Your score for this scenario" }: { re
           <p>{res.prompt}</p>
         </details>
       )}
-      {res.graded_by && <p className="graded-by">Graded by {graderLabel(res.graded_by)}</p>}
+      {res.graded_by && !res.is_estimate && <p className="graded-by">Graded by {graderLabel(res.graded_by)}</p>}
     </div>
   );
 }

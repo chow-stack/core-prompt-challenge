@@ -1,6 +1,6 @@
 # CORE Prompt Challenge: implementation plan
 
-Status: **plan only, nothing built yet.** Drafted 2026-10-07 by Claude for Caio. Another AI agent will implement this. Read the whole file before writing code.
+Status: **v1 built 2026-10-07** (phases 1–8; see `log.md` for deviations and open items). Section 3.2's field-name and thinking-config checks are still pending a real `GEMINI_API_KEY` run of `tests/calibration.mjs`. Drafted 2026-10-07 by Claude for Caio.
 
 Owner: Caio Bonato (Gen AI Club, Indiana University). Decisions in section 2 were made by Caio on 2026-10-07 and are final unless Caio changes them.
 
