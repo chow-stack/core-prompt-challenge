@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { supabase } from "./api.ts";
+import { errorText, supabase } from "./api.ts";
 
 // ---------- Router (History API; Vercel rewrites every path to index.html) ----------
 const listeners = new Set<() => void>();
@@ -87,7 +87,7 @@ export function useAction() {
     try {
       return await fn();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong. Try again.");
+      setError(errorText(e));
     } finally {
       inflight.current = false;
       setBusy(false);

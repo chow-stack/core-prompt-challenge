@@ -69,7 +69,7 @@ export function Board({ seasonParam }: { seasonParam: string | null }) {
               <LeaderboardTable rows={board.in_progress} showRank={false} />
             </>
           )}
-          <p className="muted small">~ means a quick estimate. Club leaders can regrade estimates with the AI grader later.</p>
+          <p className="muted small">~ means a quick estimate, used when the AI grader was busy.</p>
         </>
       )}
       <button className="btn block" type="button" onClick={() => navigate(me ? "/play" : "/")}>

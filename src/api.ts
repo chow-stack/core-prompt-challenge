@@ -110,5 +110,7 @@ export const store = {
 };
 
 export function errorText(e: unknown): string {
+  if (e instanceof TypeError || (e instanceof Error && /failed to fetch|network|load failed/i.test(e.message)))
+    return "Could not connect. Check your internet and try again.";
   return e instanceof Error ? e.message : "Something went wrong. Try again.";
 }
