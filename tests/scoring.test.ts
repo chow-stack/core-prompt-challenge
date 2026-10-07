@@ -25,7 +25,7 @@ test("six scenarios with compilable must patterns", () => {
     assert.doesNotThrow(() => compileMust(s.must));
   }
   assert.ok(compileMust(SCENARIOS[0].must)[1].test("30 flashcards"));
-  assert.deepEqual(SCENARIOS.slice(3).map((s) => s.title), ["Dorm-room chef", "Spring break road trip", "Haunted campus adventure"]);
+  assert.deepEqual(SCENARIOS.slice(3).map((s) => s.title), ["The fridge note", "Treaty with the campus squirrel", "McNutt plate strategy"]);
 });
 
 test("scenarios 1-3 match the reference prototype byte-for-byte (4-6 were replaced with fun ones)", () => {
@@ -52,9 +52,9 @@ test("anchor prompt gets a strong local estimate", () => {
 
 test("fun scenarios: a strong prompt beats a vague one on the estimate", () => {
   const strong: Record<number, string> = {
-    3: "You're a late-night dorm chef. I have eggs, shredded cheese, one tortilla, leftover rice, and hot sauce, plus a microwave and a mug, no stove. Give me one recipe I can make in under 10 minutes: a short ingredient list and numbered steps with microwave times. Only use what I listed, don't add anything. Make it spicy, like a breakfast burrito. Ask me anything you need first.",
-    4: "Act as a travel planner. Four friends, 4 days, leaving Bloomington, $250 each, one car, no day over 5 hours of driving. We love food and hiking. Give me a day-by-day table with drive time, stops, and cost per person. Stay under budget and flag anything that needs a reservation. Here is an example row: Day 1 | Bloomington to Nashville | 4 h | $60. Ask me questions first.",
-    5: "You are the game master of a spooky choose-your-own-adventure on the IU campus on Halloween night. I play a freshman lost near the Old Crescent. Keep each scene under 120 words and end with 3 numbered choices, then wait for my choice. Spooky, not gory, track my inventory, wrap up in 10 turns. Style it like Goosebumps. Ask me anything before you start.",
+    3: "I live in a dorm with a shared fridge and someone keeps eating my labeled leftovers; they even found the lasagna I hid behind the pickles. Here is my sticky note from last week that got ignored: [pasted]. Write one fridge note under 40 words that is firm but funny. Don't name or blame anyone and nothing passive-aggressive. Give me 2 options.",
+    4: "Act as a formal treaty lawyer. A squirrel outside the library steals half my sandwich every day. Attached is a real peace treaty; match its layout. Draft a one-page peace treaty between me and the squirrel with a preamble, 6 numbered clauses, a penalty for each violation, and signature lines. Keep a formal, deadpan tone and never break character. Ask me anything first.",
+    5: "You are a hyped ESPN sports commentator. I have one dining swipe left for the week and I'm walking into McNutt starving after a 3-hour lab. Attached is a photo of the stations. Give play-by-play of my plate strategy in under 150 words, only using stations in the photo, and end with a verdict: win or loss. Style it like an NFL broadcast.",
   };
   for (const i of [3, 4, 5]) {
     const hi = localGrade(strong[i], SCENARIOS[i].must).percent;

@@ -1,3 +1,9 @@
+# 2026-10-07 (evening): Caio's scenario set
+
+- Scenarios 4–6 are now The fridge note, Treaty with the campus squirrel, and McNutt plate strategy (Caio's text, verbatim). Hidden grader notes and keyword patterns were written for each. Scenarios 1–3 are unchanged. Applied live as migration `20261008000300_new_fun_scenarios.sql` (generated from `shared/scenarios.ts`). No submissions existed for the old 4–6.
+- The home tagline now reads "from exam prep to negotiating with a campus squirrel."
+- Friendly "Could not connect" message instead of a raw "TypeError: Failed to fetch"; leaderboard estimate note updated.
+
 # 2026-10-07 (later): one try, background grading, open hosting, fun scenarios
 
 Changes Caio requested after the first deploy:

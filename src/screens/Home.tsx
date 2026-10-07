@@ -17,7 +17,7 @@ export function Home({ prefillCode }: { prefillCode: string }) {
     <>
       <h1>The CORE Prompt Challenge</h1>
       <p className="lead">
-        Six real-life scenarios, from exam prep to a haunted campus adventure. Write a prompt for each, and get graded on
+        Six real-life scenarios, from exam prep to negotiating with a campus squirrel. Write a prompt for each, and get graded on
         Context, Output, Rules, and Examples.
       </p>
       <CoreCards />

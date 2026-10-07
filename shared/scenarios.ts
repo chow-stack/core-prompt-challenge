@@ -1,5 +1,5 @@
 // Scenario bank. Scenarios 1-3 are extracted verbatim from reference/artifact-original.html (SCEN);
-// 4-6 were replaced on 2026-10-07 with fun, non-school scenarios.
+// 4-6 are the fun set (The fridge note, Treaty with the campus squirrel, McNutt plate strategy), chosen by Caio.
 // `must` holds the RegExp sources (no flags; text is lowercased first).
 // Server-only: grader notes and must patterns never ship to the browser.
 // The database seed (supabase/migrations/*_seed_scenarios.sql) is generated from this file by scripts/gen-seed.mjs.
@@ -67,52 +67,52 @@ export const SCENARIOS: ScenarioSeed[] = [
   {
     "id": 4,
     "position": 3,
-    "title": "Dorm-room chef",
-    "situation": "It is 11 p.m., the dining hall is closed, and your mini fridge has eggs, shredded cheese, one tortilla, leftover rice, and hot sauce. You have a microwave and a mug. No stove.",
-    "goal": "Get the AI to give you a late-night recipe you can actually make with only what you have, in under 10 minutes.",
-    "notes": "Strong prompt: lists the exact ingredients and equipment (microwave and a mug, no stove), sets a time limit like under 10 minutes, asks for a short ingredient list and numbered steps with microwave times, says to use only what is listed and not to add anything else, sets a fun or casual tone, and may describe a flavor or format they like (for example spicy, like a breakfast burrito) or ask for one backup option, ending with an invitation to ask questions first.",
+    "title": "The fridge note",
+    "situation": "Someone keeps eating the leftovers you labeled in the dorm fridge. You hid the lasagna behind the pickles and it still vanished. You have the sticky note you wrote last week, which was ignored.",
+    "goal": "Get the AI to write a note for the fridge that is firm but funny, under 40 words, without blaming anyone by name.",
+    "notes": "Strong prompt: explains the situation (labeled leftovers keep disappearing from a shared dorm fridge, even the lasagna hidden behind the pickles), pastes the ignored sticky note as an example of what did not work, asks for one note under 40 words, sets a firm but funny tone, adds rules such as no names or accusations and nothing mean or passive-aggressive, and may ask for two or three options to pick from or invite questions first.",
     "must": [
-      "recipe|snack|meal|cook|make",
-      "microwave|mug",
-      "egg|cheese|tortilla|rice|hot sauce",
-      "\\bonly\\b|don't add|do not add|nothing else|no stove|without",
-      "\\d+ ?(min|minutes)|quick|fast|under",
-      "step|numbered|list|instructions",
-      "spicy|flavor|taste|like a|burrito|example"
+      "note|sign|sticky",
+      "fridge|refrigerator|leftover|lasagna|food",
+      "\\d+ words|short|brief|under|concise",
+      "funny|humor|humorous|joke|firm|playful|tone",
+      "name|blam|accus|anyone|passive",
+      "dorm|roommate|shared|floor|suite",
+      "example|ignored|last week|didn't work|did not work|my (old|last|previous) note|sticky note"
     ]
   },
   {
     "id": 5,
     "position": 4,
-    "title": "Spring break road trip",
-    "situation": "You and three friends want a 4-day spring break road trip from Bloomington. You have one car, about $250 each, and nobody wants to drive more than 5 hours in a day.",
-    "goal": "Get the AI to plan a fun day-by-day itinerary that fits the budget and the driving limit.",
-    "notes": "Strong prompt: states the start city, group size, number of days, budget per person, and the 5-hour daily driving limit; says what the group likes (for example food, hiking, concerts, beaches); asks for a day-by-day table with drive time, stops, and estimated cost; adds rules such as stay under budget, no day over 5 hours of driving, and flag anything that needs a reservation; may give an example of a past trip they loved or a sample table row, and ends with an invitation to ask questions first.",
+    "title": "Treaty with the campus squirrel",
+    "situation": "A squirrel outside the library steals half your sandwich every day. You have decided diplomacy is the only option. You found a real peace treaty online whose layout you want to imitate.",
+    "goal": "Get the AI to draft a one-page peace treaty between you and the squirrel, with numbered clauses, a penalty for each violation, and a formal, deadpan tone.",
+    "notes": "Strong prompt: sets the scene (a squirrel outside the library steals half the sandwich every day) and may cast the AI as a diplomat or treaty lawyer, attaches or pastes the real treaty whose layout to copy, asks for a one-page treaty with a title, preamble, numbered clauses, a penalty for each violation, and signature lines, sets a formal, deadpan tone, adds rules such as keep it to one page, never break character or wink at the joke, and keep it kind to the squirrel, and may invite questions first.",
     "must": [
-      "trip|itinerary|road|travel",
-      "bloomington|indiana",
-      "\\d+ ?(day|days)|four days|4-day|day by day|day-by-day",
-      "budget|\\$|cost|cheap|afford",
-      "\\d+ ?hours?|drive|driving",
-      "table|schedule|plan|list",
-      "friends|group|four of us|4 of us|people"
+      "treaty|agreement|accord|pact",
+      "squirrel",
+      "sandwich|food|lunch|library",
+      "clause|article|numbered|section",
+      "penalt|violation|consequence|breach",
+      "formal|deadpan|serious|legal|official|tone",
+      "one page|1 page|one-page|layout|format|example|attach|style of|real treaty"
     ]
   },
   {
     "id": 6,
     "position": 5,
-    "title": "Haunted campus adventure",
-    "situation": "You have a free evening and want the AI to run a choose-your-own-adventure game for you, set on a spooky version of the IU campus on Halloween night.",
-    "goal": "Get the AI to act as the game master and run an interactive story that stops and waits for your choice at every turn.",
-    "notes": "Strong prompt: makes the AI the game master, sets the scene (haunted IU campus on Halloween night) and the player's character, asks for short scenes (for example under 120 words) that each end with 2 to 4 numbered choices, adds rules such as wait for my choice before continuing, keep it spooky but not gory, track an inventory or health, and wrap up within about 10 turns; may name a style to match (like Goosebumps or Stranger Things) or give a sample scene, and invites questions first.",
+    "title": "McNutt plate strategy",
+    "situation": "You have one dining swipe left for the week, and you're walking into McNutt starving after a three-hour lab. You have a photo of the stations and a long history of bad decisions.",
+    "goal": "Get the AI to act as a sports commentator who gives play-by-play of your plate strategy, under 150 words, ending with a verdict on whether the meal was a win or a loss.",
+    "notes": "Strong prompt: casts the AI as a sports commentator, gives the context (one swipe left for the week, starving after a three-hour lab, walking into McNutt) and attaches the photo of the stations, asks for play-by-play of the plate strategy under 150 words that ends with a clear win-or-loss verdict, adds rules such as only use stations in the photo, keep it PG, and stay in character, and may name a commentator style to imitate (for example a hyped NFL announcer or a hushed golf broadcaster) or mention past bad decisions as material.",
     "must": [
-      "game master|narrator|dungeon master|\\bgm\\b|\\bdm\\b|run (a|the) game|act as|you are",
-      "adventure|story|game",
-      "spooky|halloween|haunted|ghost|campus|\\biu\\b|indiana",
-      "choice|choose|option|\\d+ (choices|options)",
-      "wait for|one (scene|turn) at a time|my (choice|answer|move)",
-      "\\d+ ?(words|turns|sentences)|short|brief",
-      "like|style|goosebumps|stranger things|example|tone"
+      "commentator|announcer|broadcaster|sportscaster|play-by-play|play by play",
+      "mcnutt|dining|swipe|plate|stations?",
+      "lab|starving|hungry|three-hour|3-hour",
+      "\\d+ words|under|short|brief",
+      "verdict|win|loss",
+      "photo|picture|attach|stations? in",
+      "like a|style|espn|nfl|golf|example|tone"
     ]
   }
 ];

@@ -76,7 +76,7 @@ npm run dev
 | `npm run test:calibration` | Grades 12 prompts plus an injection test on both Gemini models and writes `tests/calibration-results.md` |
 | `tests/scoring.sql` | Transactional ranking, tie-break, rooms, quota, and rollover fixtures. Paste into the SQL editor; it rolls back |
 
-Scenarios 1–3 come verbatim from the prototype; 4–6 (Dorm-room chef, Spring break road trip, Haunted campus adventure) are the fun set. To change scenarios, edit `shared/scenarios.ts` and run `node scripts/gen-seed.mjs --scenarios-only` into a new migration.
+Scenarios 1–3 come verbatim from the prototype; 4–6 (The fridge note, Treaty with the campus squirrel, McNutt plate strategy) are the fun set. To change scenarios, edit `shared/scenarios.ts` and run `node scripts/gen-seed.mjs --scenarios-only` into a new migration.
 
 After editing `shared/scoring.ts`, run `node scripts/sync-shared.mjs` and redeploy the functions. After editing `shared/scenarios.ts`, run `node scripts/gen-seed.mjs` into a **new** migration.
 

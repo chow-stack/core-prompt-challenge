@@ -67,7 +67,7 @@ try {
   step("hidden data");
   const scen = await ok(p2, "list_scenarios");
   assert.equal(scen.length, 6);
-  assert.deepEqual(scen.slice(3).map((s) => s.title), ["Dorm-room chef", "Spring break road trip", "Haunted campus adventure"]);
+  assert.deepEqual(scen.slice(3).map((s) => s.title), ["The fridge note", "Treaty with the campus squirrel", "McNutt plate strategy"]);
   assert.ok(!JSON.stringify(scen).includes("Strong prompt"), "grader notes never leave the DB");
   for (const t of ["submissions", "players", "scenarios", "grader_calls"]) {
     const { error } = await p2.schema("game_private").from(t).select("*").limit(1);
@@ -81,7 +81,7 @@ try {
   const s1 = await ok(p2, "submit_prompt", { scenario_id: 1, prompt });
   await denied(p2, "submit_prompt", { scenario_id: 1, prompt: prompt + " again" }, /already submitted/);
   // Moving on while grading: a second scenario can be submitted before the first is graded.
-  const s2 = await ok(p2, "submit_prompt", { scenario_id: 4, prompt: "Give me a microwave mug recipe with eggs and cheese in under 10 minutes. Only use what I have." });
+  const s2 = await ok(p2, "submit_prompt", { scenario_id: 4, prompt: "Write a funny but firm note for our dorm fridge, under 40 words. Do not blame anyone by name." });
   const prog0 = await ok(p2, "my_progress");
   assert.equal(prog0.scenarios[0].attempts_left, 0);
   assert.equal(prog0.scenarios[0].latest.status, "queued");
