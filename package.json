@@ -1,0 +1,33 @@
+{
+  "name": "core-prompt-challenge",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test tests/scoring.test.ts",
+    "test:integration": "node --env-file=.env.local tests/integration.mjs",
+    "test:load": "node --env-file=.env.local tests/load.mjs",
+    "test:calibration": "node --env-file=.env.local tests/calibration.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "prebuild": "npm run check:secrets",
+    "postbuild": "node scripts/check-dist.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.3",
+    "qrcode": "1.5.4",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.1",
+    "typescript": "5.9.3",
+    "vite": "8.3.0"
+  }
+}
