@@ -1,4 +1,4 @@
--- Transactional fixtures for ranking, tie-breaks, best-of-three, rooms, grader quota, and season rollover.
+-- Transactional fixtures for ranking, tie-breaks, best score per scenario, rooms, grader quota, and season rollover.
 -- Run in the Supabase SQL editor (or the MCP execute_sql). Everything rolls back. Raises on the first failure.
 begin;
 do $$
@@ -45,8 +45,7 @@ begin
   if r->'in_progress'->0->'scores'->5 <> 'null'::jsonb then raise exception 'missing scenario should be null'; end if;
   if r::text like '%"prompt"%' then raise exception 'leaderboard leaks prompts'; end if;
 
-  -- Rooms: admin hosts, players join, advance, one submission per scenario, room board.
-  update game_private.players set is_admin = true where id = pid[1];
+  -- Rooms: any player hosts, players join, advance, one submission per scenario, room board.
   r := public.game_create(120); gid := (r->'game'->>'id')::uuid;
   if r->>'role' <> 'host' then raise exception 'host role'; end if;
   perform set_config('request.jwt.claim.sub', u[2]::text, true);
@@ -87,9 +86,10 @@ begin
   insert into game_private.submissions (player_id, season_id, scenario_id, attempt_no, prompt) values (pid[3], season, 3, 2, 'q2') returning id into sub;
   if (game_private.svc_claim(sub))->>'reason' <> 'quota' then raise exception 'quota not enforced'; end if;
 
-  -- Season rollover archives the board.
+  -- Season rollover archives the board (done from the SQL editor now that the admin page is gone).
+  update game_private.seasons set status = 'archived', ended_at = now() where status = 'active';
+  insert into game_private.seasons (name) values ('Fixture 2');
   perform set_config('request.jwt.claim.sub', u[1]::text, true);
-  r := public.admin_new_season('Fixture 2');
   r := public.leaderboard();
   if jsonb_array_length(r->'ranked') <> 0 or r->'season'->>'name' <> 'Fixture 2' then raise exception 'rollover %', r; end if;
   r := public.leaderboard(season);

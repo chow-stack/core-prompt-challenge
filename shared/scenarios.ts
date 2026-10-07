@@ -1,4 +1,5 @@
-// Scenario bank, extracted verbatim from reference/artifact-original.html (SCEN).
+// Scenario bank. Scenarios 1-3 are extracted verbatim from reference/artifact-original.html (SCEN);
+// 4-6 were replaced on 2026-10-07 with fun, non-school scenarios.
 // `must` holds the RegExp sources (no flags; text is lowercased first).
 // Server-only: grader notes and must patterns never ship to the browser.
 // The database seed (supabase/migrations/*_seed_scenarios.sql) is generated from this file by scripts/gen-seed.mjs.
@@ -66,51 +67,52 @@ export const SCENARIOS: ScenarioSeed[] = [
   {
     "id": 4,
     "position": 3,
-    "title": "Plan your month",
-    "situation": "You have four syllabi and a work schedule, and every deadline blurs together. You can attach the syllabi and your weekly schedule.",
-    "goal": "Get the AI to build one table of every deadline this month, sorted by date, and flag any week with two or more exams.",
-    "notes": "Strong prompt: attaches syllabi and schedule, states the month and courses, asks for a table with named columns, sorted by date, with a rule to flag any week with two or more exams, says not to invent dates and to ask if a date is missing, and may show a sample row.",
+    "title": "Dorm-room chef",
+    "situation": "It is 11 p.m., the dining hall is closed, and your mini fridge has eggs, shredded cheese, one tortilla, leftover rice, and hot sauce. You have a microwave and a mug. No stove.",
+    "goal": "Get the AI to give you a late-night recipe you can actually make with only what you have, in under 10 minutes.",
+    "notes": "Strong prompt: lists the exact ingredients and equipment (microwave and a mug, no stove), sets a time limit like under 10 minutes, asks for a short ingredient list and numbered steps with microwave times, says to use only what is listed and not to add anything else, sets a fun or casual tone, and may describe a flavor or format they like (for example spicy, like a breakfast burrito) or ask for one backup option, ending with an invitation to ask questions first.",
     "must": [
-      "table|spreadsheet|calendar|list",
-      "deadline|due",
-      "sort|order|by date|chronolog",
-      "exam|midterm|test",
-      "syllabus|syllabi|schedule",
-      "flag|highlight|mark|two or more|2 or more|conflict|crunch",
-      "month|october|week"
+      "recipe|snack|meal|cook|make",
+      "microwave|mug",
+      "egg|cheese|tortilla|rice|hot sauce",
+      "\\bonly\\b|don't add|do not add|nothing else|no stove|without",
+      "\\d+ ?(min|minutes)|quick|fast|under",
+      "step|numbered|list|instructions",
+      "spicy|flavor|taste|like a|burrito|example"
     ]
   },
   {
     "id": 5,
     "position": 4,
-    "title": "Custom poster from a modified image",
-    "situation": "You have a cartoon illustration you are allowed to use, such as your own artwork or one with a free license. You want a modified version to print as a dorm poster with Rasterbator.",
-    "goal": "Get an image tool like Gemini to recreate the image in the same art style with only the changes you name, in a print-ready size.",
-    "notes": "Strong prompt: attaches the image, says it is yours or free to use, asks for the exact same subject and art style, names the only changes (for example swap the color palette to maroon and cream and remove background clutter), says not to alter anything else, states a poster-friendly aspect ratio and high resolution, and may reference a style example.",
+    "title": "Spring break road trip",
+    "situation": "You and three friends want a 4-day spring break road trip from Bloomington. You have one car, about $250 each, and nobody wants to drive more than 5 hours in a day.",
+    "goal": "Get the AI to plan a fun day-by-day itinerary that fits the budget and the driving limit.",
+    "notes": "Strong prompt: states the start city, group size, number of days, budget per person, and the 5-hour daily driving limit; says what the group likes (for example food, hiking, concerts, beaches); asks for a day-by-day table with drive time, stops, and estimated cost; adds rules such as stay under budget, no day over 5 hours of driving, and flag anything that needs a reservation; may give an example of a past trip they loved or a sample table row, and ends with an invitation to ask questions first.",
     "must": [
-      "image|picture|photo|illustration|artwork",
-      "poster|print|wall|rasterbator|large|resolution",
-      "exact|same|keep|preserve|style",
-      "color|colour|maroon|cream|background|remove|change|modif",
-      "ratio|resolution|high|size|portrait|landscape|\\d",
-      "\\bonly\\b|don't change|do not change|nothing else|leave"
+      "trip|itinerary|road|travel",
+      "bloomington|indiana",
+      "\\d+ ?(day|days)|four days|4-day|day by day|day-by-day",
+      "budget|\\$|cost|cheap|afford",
+      "\\d+ ?hours?|drive|driving",
+      "table|schedule|plan|list",
+      "friends|group|four of us|4 of us|people"
     ]
   },
   {
     "id": 6,
     "position": 5,
-    "title": "Class-notes podcast in NotebookLM",
-    "situation": "Finals are close and your Intro to Psych notes cover six weeks. You would rather listen than reread. You can upload your notes and slides to NotebookLM.",
-    "goal": "Get NotebookLM to turn your notes into a study podcast aimed at what you need to learn.",
-    "notes": "Strong prompt: says the course and exam, that the notes and slides are uploaded as sources, asks for an audio overview with two hosts, a set length in minutes, a casual explain-it-simply tone, a focus on named weak topics, rules such as stick to the sources and define any jargon, and may name a style to imitate or end with an invitation to ask questions first.",
+    "title": "Haunted campus adventure",
+    "situation": "You have a free evening and want the AI to run a choose-your-own-adventure game for you, set on a spooky version of the IU campus on Halloween night.",
+    "goal": "Get the AI to act as the game master and run an interactive story that stops and waits for your choice at every turn.",
+    "notes": "Strong prompt: makes the AI the game master, sets the scene (haunted IU campus on Halloween night) and the player's character, asks for short scenes (for example under 120 words) that each end with 2 to 4 numbered choices, adds rules such as wait for my choice before continuing, keep it spooky but not gory, track an inventory or health, and wrap up within about 10 turns; may name a style to match (like Goosebumps or Stranger Things) or give a sample scene, and invites questions first.",
     "must": [
-      "podcast|audio|overview|hosts?|conversation",
-      "notes|slides|lecture|class|sources?",
-      "\\d+ ?(min|minutes)|short|length|\\d",
-      "casual|tone|friendly|explain|beginner|simple",
-      "focus|weak|topics?|emphasi|prioriti",
-      "\\bonly\\b|stick|don't|avoid|jargon|define",
-      "exam|final|study|psych"
+      "game master|narrator|dungeon master|\\bgm\\b|\\bdm\\b|run (a|the) game|act as|you are",
+      "adventure|story|game",
+      "spooky|halloween|haunted|ghost|campus|\\biu\\b|indiana",
+      "choice|choose|option|\\d+ (choices|options)",
+      "wait for|one (scene|turn) at a time|my (choice|answer|move)",
+      "\\d+ ?(words|turns|sentences)|short|brief",
+      "like|style|goosebumps|stranger things|example|tone"
     ]
   }
 ];

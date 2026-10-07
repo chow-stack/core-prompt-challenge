@@ -1,4 +1,4 @@
-export type Player = { id: string; nickname: string; is_admin: boolean };
+export type Player = { id: string; nickname: string };
 
 export type Scenario = { id: number; position: number; title: string; situation: string; goal: string };
 
@@ -89,20 +89,6 @@ export type GameState = {
   players: { id: string; nickname: string; is_me: boolean }[];
   my_submissions: { scenario_id: number; submission_id: string; status: Submission["status"]; percent: number | null }[];
   server_time: string;
-};
-
-export type AdminStats = {
-  settings: Record<string, unknown>;
-  season: { id: string; name: string; started_at: string } | null;
-  calls: { model: string; today: number; last_minute: number; failed_today: number }[];
-  queue_length: number;
-  regrade_pending: number;
-  estimates: number;
-  graded_today: number;
-  players: number;
-  rooms: { id: string; code: string; phase: string; scenario_idx: number; host: string; players: number; created_at: string }[];
-  server_time: string;
-  requeued?: number;
 };
 
 export function isGraded(s: Submission | null | undefined): s is Graded {

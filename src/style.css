@@ -659,31 +659,134 @@ td.n {
   white-space: nowrap;
 }
 
-/* ---------- Recovery dialog ---------- */
-.dialog {
-  border: 0;
-  border-top: 6px solid var(--m2);
-  border-radius: 4px;
-  padding: 22px;
-  width: min(460px, calc(100vw - 32px));
-  background: var(--cream);
-  color: var(--ink);
+/* ---------- Background grading: pending pips, banner, spinner, toasts ---------- */
+.pip.pending {
+  border-color: var(--m4);
+  border-style: dashed;
 }
-.dialog::backdrop {
-  background: rgba(43, 21, 7, 0.55);
-}
-.recovery {
-  font-size: 34px;
+.dots::after {
+  content: "...";
+  display: inline-block;
   font-weight: bold;
-  letter-spacing: 0.12em;
-  text-align: center;
-  color: var(--m1);
-  background: #fff;
-  border: 2px dashed var(--m4);
-  padding: 14px;
-  margin: 12px 0;
-  user-select: all;
+  animation: blink 1.2s steps(4, end) infinite;
+  width: 1.4em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+@keyframes blink {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 1.4em;
+  }
+}
+.spinner {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  border: 3px solid var(--rose);
+  border-top-color: var(--m2);
+  display: inline-block;
+  animation: spin 0.9s linear infinite;
+  vertical-align: middle;
+}
+.spinner.sm {
+  width: 13px;
+  height: 13px;
+  border-width: 2px;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.bg-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--rose2);
+  border-left: 4px solid var(--m2);
+  padding: 10px 14px;
+  margin: 0 0 16px;
+  font-size: 15.5px;
+}
+td.grading-cell {
+  text-align: left;
+  color: var(--m3);
+  font-style: italic;
+}
+.toasts {
+  position: fixed;
+  z-index: 20;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(380px, calc(100vw - 32px));
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--m1);
+  color: var(--cream);
+  border-radius: 6px;
+  padding: 12px 12px 12px 16px;
+  box-shadow: 0 6px 18px rgba(43, 21, 7, 0.3);
+  animation: rise 0.25s ease-out;
+}
+.toast-pct {
+  font-size: 30px;
+  font-weight: bold;
+  line-height: 1;
   font-variant-numeric: lining-nums tabular-nums;
+}
+.toast-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: 15px;
+  min-width: 0;
+}
+.toast-body span {
+  color: var(--rose);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.toast .btn.alt.sm {
+  color: var(--cream);
+  border-color: var(--rose);
+}
+.toast .btn.alt.sm:hover {
+  background: var(--m2);
+}
+.toast-x {
+  background: none;
+  border: 0;
+  color: var(--rose);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 0 4px;
+  min-height: 32px;
+}
+@media (max-width: 719px) {
+  .toasts {
+    bottom: auto;
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+}
+@keyframes rise {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
 }
 
 /* ---------- Host projector stage ---------- */
@@ -1017,7 +1120,12 @@ td.n {
   .progress i {
     transition: none;
   }
-  .chips li {
+  .chips li,
+  .toast {
+    animation: none;
+  }
+  .spinner,
+  .dots::after {
     animation: none;
   }
 }

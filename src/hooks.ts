@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { api, kickGrader, supabase } from "./api.ts";
-import type { Submission } from "./types.ts";
+import { supabase } from "./api.ts";
 
 // ---------- Router (History API; Vercel rewrites every path to index.html) ----------
 const listeners = new Set<() => void>();
@@ -27,78 +26,6 @@ export function useLocation(): { path: string; search: URLSearchParams } {
   const href = useSyncExternalStore(subscribe, () => location.pathname + location.search);
   const u = new URL(href, location.origin);
   return { path: u.pathname.replace(/\/+$/, "") || "/", search: u.searchParams };
-}
-
-// ---------- Grading: poll grade_status and keep nudging the worker while queued (PLAN.md 3.1 step 4) ----------
-const POLL_MS = 2500;
-const KICK_MS = 6000;
-
-export function useGrading(submissionId: string | null, onDone?: (s: Submission) => void) {
-  const [sub, setSub] = useState<Submission | null>(null);
-  const [error, setError] = useState("");
-  const done = useRef(onDone);
-  done.current = onDone;
-
-  useEffect(() => {
-    if (!submissionId) {
-      setSub(null);
-      return;
-    }
-    let alive = true;
-    let finished = false;
-    let running = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let lastKick = 0;
-    let kicking = false;
-    // One timer only: every reschedule clears the previous one, and tick never overlaps itself.
-    const schedule = (ms: number) => {
-      clearTimeout(timer);
-      if (alive && !finished) timer = setTimeout(tick, ms);
-    };
-    const kick = () => {
-      if (kicking) return;
-      kicking = true;
-      lastKick = Date.now();
-      kickGrader(submissionId).finally(() => {
-        kicking = false;
-        schedule(200);
-      });
-    };
-    const tick = async () => {
-      if (running || !alive || finished) return;
-      running = true;
-      try {
-        const s = await api.gradeStatus(submissionId);
-        if (!alive) return;
-        setSub(s);
-        setError("");
-        if (s.status === "graded") {
-          finished = true;
-          done.current?.(s);
-          return;
-        }
-        if (Date.now() - lastKick >= KICK_MS) kick();
-      } catch (e) {
-        if (alive) setError(e instanceof Error ? e.message : "Connection problem. Retrying...");
-      } finally {
-        running = false;
-      }
-      schedule(POLL_MS + Math.random() * 600);
-    };
-    kick();
-    tick();
-    const onFocus = () => schedule(0);
-    window.addEventListener("focus", onFocus);
-    window.addEventListener("online", onFocus);
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-      window.removeEventListener("focus", onFocus);
-      window.removeEventListener("online", onFocus);
-    };
-  }, [submissionId]);
-
-  return { sub, error };
 }
 
 // ---------- Realtime with a polling fallback ----------

@@ -1,35 +1,50 @@
 // Supabase client and typed RPC helpers. Only the publishable key reaches the browser.
 import { createClient } from "@supabase/supabase-js";
-import type { AdminStats, Board, GameState, Player, Progress, Scenario, Season, Submission } from "./types.ts";
+import type { Board, GameState, Player, Progress, Scenario, Season, Submission } from "./types.ts";
 
 export const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
-let authPromise: Promise<void> | null = null;
+let signingIn: Promise<void> | null = null;
 
-/** Ensure an (anonymous) session exists. Shared so parallel callers sign in once. */
-export function auth(): Promise<void> {
-  authPromise ??= (async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) return;
+/**
+ * Ensure an (anonymous) session exists. Checked on every call (getSession is local and cheap) so a session that was
+ * cleared or expired is replaced instead of failing forever. Parallel callers share one sign-in.
+ */
+export async function auth(): Promise<void> {
+  const { data } = await supabase.auth.getSession();
+  if (data.session) return;
+  signingIn ??= (async () => {
     const { error } = await supabase.auth.signInAnonymously();
     if (error) {
       throw new Error(
         /disabled/i.test(error.message)
           ? "Sign-in is turned off on the server. Ask a club leader to enable anonymous sign-ins in Supabase."
-          : "Could not connect. Check your internet and try again.",
+          : /rate limit|too many/i.test(error.message)
+            ? "Too many people are signing in from this network right now. Wait a minute and try again."
+            : "Could not connect. Check your internet and try again.",
       );
     }
-  })().catch((e) => {
-    authPromise = null;
-    throw e;
+  })().finally(() => {
+    signingIn = null;
   });
-  return authPromise;
+  return signingIn;
+}
+
+/** True when the request failed because the session is missing, expired, or belongs to a deleted user. */
+function isAuthError(e: { code?: string; message?: string }): boolean {
+  return e.code === "42501" || e.code === "PGRST301" || /JWT|sub claim|not authenticated/i.test(e.message ?? "");
 }
 
 /** Call an RPC and return its data, throwing a plain-English Error (RPC messages are written for players). */
 export async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
   await auth();
-  const { data, error } = await supabase.rpc(fn, args);
+  let { data, error } = await supabase.rpc(fn, args);
+  if (error && isAuthError(error)) {
+    // Stale or missing session: start a fresh anonymous one and retry once.
+    await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+    await auth();
+    ({ data, error } = await supabase.rpc(fn, args));
+  }
   if (error) {
     const msg = error.message || "";
     // Server errors raised by our functions are already friendly; hide anything that looks internal.
@@ -41,10 +56,8 @@ export async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Pr
 
 export const api = {
   me: () => rpc<Player | null>("me"),
-  register: (nickname: string) => rpc<{ player: Player; recovery_code: string }>("register_player", { nickname }),
+  register: (nickname: string) => rpc<{ player: Player }>("register_player", { nickname }),
   rename: (nickname: string) => rpc<Player>("rename_player", { nickname }),
-  recover: (nickname: string, code: string) => rpc<Player>("recover_player", { nickname, code }),
-  rotateCode: () => rpc<{ recovery_code: string }>("rotate_recovery_code"),
   scenarios: () => rpc<Scenario[]>("list_scenarios"),
   submit: (scenario_id: number, prompt: string, game_id: string | null = null) =>
     rpc<{ submission_id: string; status: string }>("submit_prompt", { scenario_id, prompt, game_id }),
@@ -52,19 +65,12 @@ export const api = {
   progress: (season_id: string | null = null) => rpc<Progress>("my_progress", { season_id }),
   leaderboard: (season_id: string | null = null, game_id: string | null = null) => rpc<Board>("leaderboard", { season_id, game_id }),
   seasons: () => rpc<Season[]>("season_list"),
-  claimAdmin: (passphrase: string) => rpc<Player>("claim_admin", { passphrase }),
   gameCreate: (timer_seconds: number) => rpc<GameState>("game_create", { timer_seconds }),
   gameJoin: (code: string) => rpc<GameState>("game_join", { code }),
   gameState: (game_id: string) => rpc<GameState>("game_state", { game_id }),
   gameAdvance: (game_id: string) => rpc<GameState>("game_advance", { game_id }),
   gameEnd: (game_id: string) => rpc<GameState>("game_end", { game_id }),
-  adminStats: () => rpc<AdminStats>("admin_stats"),
-  adminSet: (key: string, value: unknown) => rpc<AdminStats>("admin_set_setting", { key, value }),
-  adminNewSeason: (name: string) => rpc<AdminStats>("admin_new_season", { name }),
-  adminRegrade: () => rpc<AdminStats>("admin_regrade_estimates"),
-  adminPlayers: (search: string) => rpc<{ id: string; nickname: string; is_admin: boolean; created_at: string; submissions: number }[]>("admin_players", { search }),
-  adminRemovePlayer: (player_id: string) => rpc<AdminStats>("admin_remove_player", { player_id }),
-  adminEndRoom: (game_id: string) => rpc<AdminStats>("admin_end_room", { game_id }),
+  myHostedGame: () => rpc<{ id: string; code: string; phase: string } | null>("my_hosted_game"),
 };
 
 /** Nudge the grader for this submission. Safe to call repeatedly; failures are ignored (polling continues). */

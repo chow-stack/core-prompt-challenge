@@ -1,13 +1,12 @@
 import { Suspense, lazy, useEffect } from "react";
-import { RecoverForm } from "./components/Identity.tsx";
+import { Toasts } from "./components/Toasts.tsx";
 import { navigate, useLocation } from "./hooks.ts";
 import { Board } from "./screens/Board.tsx";
 import { Home } from "./screens/Home.tsx";
 import { Live } from "./screens/Live.tsx";
 import { Solo } from "./screens/Solo.tsx";
 
-// Club-leader screens are split out so players never download the QR library or admin code.
-const Admin = lazy(() => import("./screens/Admin.tsx").then((m) => ({ default: m.Admin })));
+// Host screens are split out so players never download the QR library.
 const HostStart = lazy(() => import("./screens/Host.tsx").then((m) => ({ default: m.HostStart })));
 const HostStage = lazy(() => import("./screens/Host.tsx").then((m) => ({ default: m.HostStage })));
 const loading = <p className="muted">Loading...</p>;
@@ -42,8 +41,6 @@ export function App() {
       [/^\/board/, "Leaderboard"],
       [/^\/game\//, "Live game"],
       [/^\/host/, "Host"],
-      [/^\/admin/, "Admin"],
-      [/^\/recover/, "Recover"],
     ];
     const t = titles.find(([rx]) => rx.test(path))?.[1];
     document.title = (t ? t + " · " : "") + "The CORE Prompt Challenge · Gen AI Club";
@@ -70,17 +67,6 @@ export function App() {
     screen = <Board seasonParam={search.get("season")} />;
   } else if (gameMatch) screen = <Live gameId={gameMatch[1]} />;
   else if (path === "/host") screen = <HostStart />;
-  else if (path === "/admin") screen = <Admin />;
-  else if (path === "/recover")
-    screen = (
-      <>
-        <h1>Recover your player</h1>
-        <p className="lead">Use the nickname and recovery code you saved when you first played.</p>
-        <section className="panel">
-          <RecoverForm />
-        </section>
-      </>
-    );
   else
     screen = (
       <>
@@ -112,6 +98,7 @@ export function App() {
             <nav className="topnav" aria-label="Main">
               <Link to="/play">Play</Link>
               <Link to="/board">Leaderboard</Link>
+              <Link to="/host">Host</Link>
             </nav>
           </div>
         </div>
@@ -119,6 +106,7 @@ export function App() {
       <main id="main" className={wide ? "wide" : undefined}>
         <Suspense fallback={loading}>{screen}</Suspense>
       </main>
+      <Toasts />
       <footer>Gen AI Club | Indiana University | The CORE Prompt Challenge</footer>
     </>
   );

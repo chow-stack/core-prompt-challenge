@@ -65,11 +65,11 @@ export function clearDraft(draftKey: string) {
   store.del("draft:" + draftKey);
 }
 
-export function GradingView({ sub, error }: { sub: Submission | null; error?: string }) {
+export function GradingView({ sub, error, background }: { sub: Submission | null; error?: string; background?: boolean }) {
   const ahead = sub?.queue_position ?? 0;
   return (
-    <div aria-live="polite">
-      <h3>Grading your prompt</h3>
+    <div className="grading" aria-live="polite">
+      <h3>{background ? "Your prompt is being graded" : "Grading your prompt"}</h3>
       <div className="wait">
         <i />
       </div>
@@ -79,6 +79,13 @@ export function GradingView({ sub, error }: { sub: Submission | null; error?: st
         </p>
       ) : (
         <p className="muted">Gemini is reading it against the CORE framework. This can take a few seconds.</p>
+      )}
+      {background && <p>You don&rsquo;t have to wait here. Move on, and your score will pop up when it is ready.</p>}
+      {sub?.prompt && (
+        <details>
+          <summary>Your prompt</summary>
+          <p>{sub.prompt}</p>
+        </details>
       )}
       {error && <p className="muted">{error}</p>}
     </div>
@@ -124,12 +131,22 @@ export function ResultView({ res, label = "Your score for this scenario" }: { re
   );
 }
 
-export function SummaryView({ scenarios, results }: { scenarios: Scenario[]; results: (Graded | null)[] }) {
+export function SummaryView({
+  scenarios,
+  results,
+  pending = [],
+}: {
+  scenarios: Scenario[];
+  results: (Graded | null)[];
+  pending?: boolean[];
+}) {
   const d = summaryData(results);
-  if (!d) return <p>No scenarios were graded.</p>;
-  const wm = LMETA[d.weak];
+  if (!d && !pending.some(Boolean)) return <p>No scenarios were graded.</p>;
+  const wm = d ? LMETA[d.weak] : null;
   return (
     <>
+      {d && wm && (
+        <>
       <div className="scorehead">
         <div className="pct">{d.percent}%</div>
         <div className="lbl">
@@ -143,6 +160,8 @@ export function SummaryView({ scenarios, results }: { scenarios: Scenario[]; res
         </b>{" "}
         {wm.tip}
       </div>
+        </>
+      )}
       <h3>Your scores</h3>
       <div className="scroll">
         <table>
@@ -177,6 +196,10 @@ export function SummaryView({ scenarios, results }: { scenarios: Scenario[]; res
                       <td className="n">{r.r}</td>
                       <td className="n">{r.e}</td>
                     </>
+                  ) : pending[i] ? (
+                    <td className="n grading-cell" colSpan={5}>
+                      <span className="spinner sm" aria-hidden="true" /> Grading...
+                    </td>
                   ) : (
                     <>
                       <td className="n">-</td>

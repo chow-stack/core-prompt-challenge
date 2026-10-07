@@ -1,3 +1,15 @@
+# 2026-10-07 (later): one try, background grading, open hosting, fun scenarios
+
+Changes Caio requested after the first deploy:
+
+- **One try per scenario** (solo). `submit_prompt` rejects a second solo submission; `player_daily_cap` is now 6. Live rooms were already one per room. "Try again" is gone from the UI.
+- **Move on while grading.** A new app-level grading tracker (`src/state.tsx`) polls every in-flight submission and nudges the grader. It survives navigation and reloads (localStorage) and raises a "Scenario N graded: 84%" toast. After submitting, solo jumps straight to the next unplayed scenario. Pips show a pulsing "..." while grading, with a banner that says "Grading N prompts in the background". The results page lists pending rows as "Grading..." and fills in live. In live rooms the player sees "Submitted! Your prompt is being graded", and grading continues if the host advances.
+- **Recovery codes removed**: RPCs, `recovery_hash` column, and UI.
+- **Admin and passphrase removed**: `/admin`, `claim_admin`, the `admin_*` RPCs, `is_admin`, and the `secrets` table. Any player can host. "Hosting?" is always on Home, Host is in the header nav, a new room ends the host's previous one, and `my_hosted_game` powers "Resume game". Settings are edited in the SQL editor (README). Tests use a service-role-only `svc_set_setting` with `SUPABASE_SECRET_KEY` from `.env.local`; `delete_me` lets test players clean up.
+- **Scenarios 4–6 replaced** with Dorm-room chef, Spring break road trip, and Haunted campus adventure (1–3 unchanged). The seed generator gained `--scenarios-only`. A unit test checks that a strong prompt beats a vague one by 40+ points on each of them.
+- Fix: `auth()` re-checks the session on every call and RPCs retry once with a fresh anonymous session on auth errors, so a cleared or expired session no longer leaves the page stuck on "Something went wrong".
+- Verified with real Gemini: solo through all six (submit → next scenario within 0.5 s → toast about 2–4 s later; the summary filled in live), host without passphrase, a phone player joined and submitted live. Integration (mock), SQL fixtures, and 15 unit tests pass.
+
 # 2026-10-07: v1 build (phases 1–8 of PLAN.md section 9)
 
 **Scaffold.** Git repo, configs copied from imposter-llm (`vite.config.ts` env guard, `vercel.json` CSP plus SPA rewrites and `img-src blob:`, `.gitignore`, secret scan extended with Google API key and bcrypt patterns). Added `scripts/check-dist.mjs` (postbuild): fails if the bundle contains a Google key, a service-role reference, a Supabase secret key, or grader notes.

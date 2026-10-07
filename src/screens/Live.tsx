@@ -5,8 +5,8 @@ import { api, errorText, store } from "../api.ts";
 import { ScenarioBlock } from "../components/CoreCards.tsx";
 import { Composer, GradingView, ResultView, SummaryView, clearDraft } from "../components/Grading.tsx";
 import { LeaderboardTable } from "../components/LeaderboardTable.tsx";
-import { formatClock, navigate, secondsLeft, useAction, useGrading, useLiveRefresh, useNow } from "../hooks.ts";
-import { useApp } from "../state.tsx";
+import { formatClock, navigate, secondsLeft, useAction, useLiveRefresh, useNow } from "../hooks.ts";
+import { useApp, useSubmission } from "../state.tsx";
 import { isGraded, type Board, type GameState, type Graded } from "../types.ts";
 
 /** Room snapshot with stale-revision protection, server clock offset, Realtime + 5 s polling. */
@@ -155,29 +155,34 @@ function LiveTurn({
   timeUp: boolean;
   onSubmitted: () => void;
 }) {
-  const [pendingId, setPendingId] = useState<string | null>(submissionId);
-  const [result, setResult] = useState<Graded | null>(null);
+  const { track } = useApp();
+  const [ownId, setOwnId] = useState<string | null>(null);
+  const id = ownId ?? submissionId;
+  const sub = useSubmission(id);
   const { busy, error, run } = useAction();
   const draftKey = `live:${gameId}:${scenarioId}`;
-  useEffect(() => {
-    if (submissionId && !pendingId && !result) setPendingId(submissionId);
-  }, [submissionId, pendingId, result]);
-  const { sub, error: pollError } = useGrading(result ? null : pendingId, (s) => {
-    if (isGraded(s)) setResult(s);
-  });
 
-  if (result)
+  if (isGraded(sub))
     return (
       <>
-        <ResultView res={result} />
+        <ResultView res={sub} />
         <div className="note">Submitted. Waiting for the host to move to the next scenario.</div>
       </>
     );
-  if (pendingId) return <GradingView sub={sub} error={pollError} />;
+  if (id)
+    return (
+      <>
+        <div className="note ok">
+          <b>Submitted!</b> Your prompt is being graded. The next scenario appears when the host moves on, even if grading is
+          still running.
+        </div>
+        <GradingView sub={sub} />
+      </>
+    );
   return (
     <Composer
       draftKey={draftKey}
-      note="You can submit once per scenario."
+      note="One try per scenario."
       busy={busy}
       error={error}
       disabled={timeUp ? "Time is up for this scenario. Wait for the next one." : ""}
@@ -185,7 +190,8 @@ function LiveTurn({
         run(async () => {
           const r = await api.submit(scenarioId, text, gameId);
           clearDraft(draftKey);
-          setPendingId(r.submission_id);
+          track(r.submission_id);
+          setOwnId(r.submission_id);
           onSubmitted();
         })
       }
@@ -196,20 +202,24 @@ function LiveTurn({
 function Final({ state, board }: { state: GameState; board: Board | null }) {
   const { scenarios } = useApp();
   const [results, setResults] = useState<(Graded | null)[] | null>(null);
+  const [pending, setPending] = useState<boolean[]>([]);
   useEffect(() => {
     Promise.all(
       scenarios.slice(0, SC_COUNT).map((s) => {
         const m = state.my_submissions.find((x) => x.scenario_id === s.id);
-        return m ? api.gradeStatus(m.submission_id).then((r) => (isGraded(r) ? r : null), () => null) : Promise.resolve(null);
+        return m ? api.gradeStatus(m.submission_id).catch(() => null) : Promise.resolve(null);
       }),
-    ).then(setResults);
+    ).then((rs) => {
+      setResults(rs.map((r) => (isGraded(r) ? r : null)));
+      setPending(rs.map((r) => !!r && !isGraded(r)));
+    });
   }, [state.my_submissions, scenarios]);
   return (
     <>
       <h1>Final standings</h1>
       <LeaderboardTable rows={board?.ranked ?? []} />
       <h2 className="gap">Your results</h2>
-      {results ? <SummaryView scenarios={scenarios} results={results} /> : <p className="muted">Loading your results...</p>}
+      {results ? <SummaryView scenarios={scenarios} results={results} pending={pending} /> : <p className="muted">Loading your results...</p>}
       <p className="muted">Your live scores also count toward the season leaderboard. You can keep improving them in solo play.</p>
       <button className="btn block" type="button" onClick={() => (store.del("room"), navigate("/board"))}>
         View the season leaderboard

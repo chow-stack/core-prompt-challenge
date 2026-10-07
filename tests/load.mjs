@@ -7,7 +7,8 @@
 import assert from "node:assert/strict";
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.VITE_SUPABASE_URL, key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY, pass = process.env.ADMIN_PASSPHRASE;
+const url = process.env.VITE_SUPABASE_URL, key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY, secret = process.env.SUPABASE_SECRET_KEY;
+if (!secret) throw new Error("Set SUPABASE_SECRET_KEY in .env.local (test-only) so the load test can switch to mock mode.");
 const BOTS = Number(process.env.BOTS ?? 40);
 const WINDOW_MS = Number(process.env.WINDOW_MS ?? 5000);
 // Phase B per-model ceiling. 12 is the production value; with few bots use e.g. RPM=3 to force queueing.
@@ -21,11 +22,8 @@ const must = async (p) => {
   return data;
 };
 
-const admin = client();
-await must(admin.auth.signInAnonymously());
-await must(admin.rpc("register_player", { nickname: `Load admin ${tag}` }));
-await must(admin.rpc("claim_admin", { passphrase: pass }));
-const before = (await must(admin.rpc("admin_stats"))).settings;
+const admin = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
+const before = { grader_mode: "gemini", rpm_limit: 12, queue_timeout_s: 90 };
 
 const bots = [];
 for (let i = 0; i < BOTS; i++) {
@@ -59,7 +57,7 @@ async function play(bot, scenario) {
 }
 
 async function phase(label, scenario, settings) {
-  for (const [k, v] of Object.entries(settings)) await must(admin.rpc("admin_set_setting", { key: k, value: v }));
+  for (const [k, v] of Object.entries(settings)) await must(admin.rpc("svc_set_setting", { key: k, value: v }));
   const t = Date.now();
   const results = await Promise.all(bots.map((b) => play(b, scenario)));
   const waits = results.map((r) => r.wait).sort((a, b) => a - b);
@@ -76,7 +74,7 @@ try {
   assert.ok(a.every((r) => r.by === "mock"));
   console.log("Waiting 61 s for the per-minute window to clear...");
   await sleep(61_000);
-  const b = await phase(`Phase B (mock, rpm_limit=${RPM} per model)`, 2, { grader_mode: "mock", rpm_limit: RPM, queue_timeout_s: 90 });
+  const b = await phase(`Phase B (mock, rpm_limit=${RPM} per model)`, 4, { grader_mode: "mock", rpm_limit: RPM, queue_timeout_s: 90 });
   const mock = b.filter((r) => r.by === "mock").length;
   assert.ok(mock >= Math.min(BOTS, 2 * RPM), `at least one minute of capacity (${2 * RPM}) graded by the model path, got ${mock}`);
 
@@ -86,7 +84,7 @@ try {
   for (const r of rows) assert.equal(r.scores.filter((v) => v != null).length, 2, "two scenarios scored per bot");
   console.log("Load test passed.");
 } finally {
-  for (const k of ["grader_mode", "rpm_limit", "queue_timeout_s"]) await admin.rpc("admin_set_setting", { key: k, value: before[k] });
-  for (const b of bots) await admin.rpc("admin_remove_player", { player_id: b.id });
+  for (const k of ["grader_mode", "rpm_limit", "queue_timeout_s"]) await admin.rpc("svc_set_setting", { key: k, value: before[k] });
+  for (const b of bots) await b.c.rpc("delete_me");
   console.log("Cleanup: settings restored, bots removed.");
 }

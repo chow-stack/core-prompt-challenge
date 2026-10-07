@@ -7,7 +7,8 @@ import { QrCode } from "../components/QrCode.tsx";
 import { LeaderboardTable } from "../components/LeaderboardTable.tsx";
 import { formatClock, navigate, secondsLeft, useAction, useNow } from "../hooks.ts";
 import { useApp } from "../state.tsx";
-import type { AdminStats, BoardRow } from "../types.ts";
+import type { BoardRow } from "../types.ts";
+import { RegisterForm } from "../components/Identity.tsx";
 import { useGame } from "./Live.tsx";
 
 const TIMERS = [
@@ -20,66 +21,71 @@ const TIMERS = [
 export function HostStart() {
   const { me } = useApp();
   const [timer, setTimer] = useState(300);
-  const [rooms, setRooms] = useState<AdminStats["rooms"]>([]);
+  const [open, setOpen] = useState<{ id: string; code: string; phase: string } | null>(null);
   const { busy, error, run } = useAction();
   useEffect(() => {
-    if (me?.is_admin) api.adminStats().then((s) => setRooms(s.rooms.filter((r) => r.host === me.nickname)), () => {});
+    if (me) api.myHostedGame().then(setOpen, () => {});
   }, [me]);
 
   if (me === undefined) return <p className="muted">Loading...</p>;
-  if (!me?.is_admin)
-    return (
-      <>
-        <h1>Host a game</h1>
-        <div className="note">Only club leaders can host live games. If you are one, unlock admin access first.</div>
-        <button className="btn alt" type="button" onClick={() => navigate("/admin")}>
-          Admin access
-        </button>
-      </>
-    );
   return (
     <>
       <h1>Host a game</h1>
-      <p className="lead">Run a live round for the whole club. You will get a join code, a QR code, and a live leaderboard.</p>
-      <section className="panel">
-        <h2>New game</h2>
-        <fieldset className="choices">
-          <legend>Time per scenario</legend>
-          {TIMERS.map(([s, label]) => (
-            <label key={s} className="choice">
-              <input type="radio" name="timer" checked={timer === s} onChange={() => setTimer(s)} /> {label}
-            </label>
-          ))}
-        </fieldset>
-        {error && (
-          <div className="note" role="alert">
-            {error}
-          </div>
-        )}
-        <button
-          className="btn block"
-          type="button"
-          disabled={busy}
-          onClick={() =>
-            run(async () => {
-              const s = await api.gameCreate(timer);
-              store.set("host", s.game.id);
-              navigate("/host/" + s.game.id);
-            })
-          }
-        >
-          {busy ? "Opening a game..." : "Open a game room"}
-        </button>
-      </section>
-      {rooms.length > 0 && (
+      <p className="lead">
+        Run a live round for the whole club. Project this screen: everyone joins with the code or QR code, and each scenario
+        appears on every phone at the same time.
+      </p>
+      {!me ? (
         <section className="panel">
-          <h2>Your open games</h2>
-          {rooms.map((r) => (
-            <button key={r.id} className="btn alt block" type="button" onClick={() => navigate("/host/" + r.id)}>
-              Resume game {r.code} ({r.players} player{r.players === 1 ? "" : "s"})
-            </button>
-          ))}
+          <h2>First, your name</h2>
+          <p>Hosts spectate and do not play, but the room needs a host name.</p>
+          <RegisterForm id="hn" cta="Continue" onReady={() => {}} />
         </section>
+      ) : (
+        <>
+          {open && (
+            <section className="panel">
+              <h2>Your open game</h2>
+              <p>
+                Game <b>{open.code}</b> is still {open.phase === "lobby" ? "waiting to start" : "running"}.
+              </p>
+              <button className="btn block" type="button" onClick={() => navigate("/host/" + open.id)}>
+                Resume game {open.code}
+              </button>
+            </section>
+          )}
+          <section className="panel">
+            <h2>{open ? "Or start a new game" : "New game"}</h2>
+            <fieldset className="choices">
+              <legend>Time per scenario</legend>
+              {TIMERS.map(([s, label]) => (
+                <label key={s} className="choice">
+                  <input type="radio" name="timer" checked={timer === s} onChange={() => setTimer(s)} /> {label}
+                </label>
+              ))}
+            </fieldset>
+            {open && <p className="muted">Starting a new game ends game {open.code}.</p>}
+            {error && (
+              <div className="note" role="alert">
+                {error}
+              </div>
+            )}
+            <button
+              className={"btn block" + (open ? " alt" : "")}
+              type="button"
+              disabled={busy}
+              onClick={() =>
+                run(async () => {
+                  const s = await api.gameCreate(timer);
+                  store.set("host", s.game.id);
+                  navigate("/host/" + s.game.id);
+                })
+              }
+            >
+              {busy ? "Opening a game..." : "Open a game room"}
+            </button>
+          </section>
+        </>
       )}
     </>
   );

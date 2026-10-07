@@ -1,16 +1,26 @@
-// Solo (season) play: six scenarios, up to 3 graded tries each, best score counts. Port of renderSolo.
+// Solo (season) play: six scenarios, one graded try each. After submitting, the player moves straight on to the
+// next scenario while Gemini grades in the background; scores pop up as toasts and fill in the pips.
 import { useCallback, useEffect, useState } from "react";
 import { SC_COUNT } from "../../shared/scoring.ts";
 import { api, errorText } from "../api.ts";
 import { Bar, ScenarioBlock } from "../components/CoreCards.tsx";
 import { Composer, GradingView, ResultView, SummaryView, clearDraft } from "../components/Grading.tsx";
 import { RegisterForm } from "../components/Identity.tsx";
-import { navigate, useAction, useGrading } from "../hooks.ts";
-import { useApp } from "../state.tsx";
-import { isGraded, type Graded, type Progress } from "../types.ts";
+import { navigate, useAction } from "../hooks.ts";
+import { useApp, useSubmission } from "../state.tsx";
+import { isGraded, type Progress, type Submission } from "../types.ts";
+
+/** Where to go after scenario i: the next scenario not yet submitted, else the results page. */
+function nextOpen(progress: Progress, i: number, justSubmitted = -1): string {
+  for (let d = 1; d < SC_COUNT; d++) {
+    const k = (i + d) % SC_COUNT;
+    if (k !== justSubmitted && !progress.scenarios[k].latest) return "/play?s=" + (k + 1);
+  }
+  return "/play/summary";
+}
 
 export function Solo({ step, summary }: { step: number | null; summary: boolean }) {
-  const { me, scenarios } = useApp();
+  const { me, scenarios, gradedTick } = useApp();
   const [progress, setProgress] = useState<Progress | null>(null);
   const [loadError, setLoadError] = useState("");
   const load = useCallback(() => {
@@ -18,11 +28,11 @@ export function Solo({ step, summary }: { step: number | null; summary: boolean 
   }, []);
   useEffect(() => {
     if (me) load();
-  }, [me, load]);
-  // Pin "/play" to a concrete step so finishing a scenario shows its result instead of jumping ahead.
-  const firstOpen = progress ? progress.scenarios.findIndex((s) => !s.best) : -1;
+  }, [me, load, gradedTick]);
+  // Pin "/play" to a concrete step (the first scenario not yet submitted).
+  const firstOpen = progress ? progress.scenarios.findIndex((s) => !s.latest) : -1;
   useEffect(() => {
-    if (progress && !summary && step == null) navigate("/play?s=" + (Math.max(0, firstOpen) + 1), true);
+    if (progress && !summary && step == null) navigate(firstOpen < 0 ? "/play/summary" : "/play?s=" + (firstOpen + 1), true);
   }, [progress, summary, step, firstOpen]);
 
   if (me === undefined) return <p className="muted">Loading...</p>;
@@ -38,98 +48,129 @@ export function Solo({ step, summary }: { step: number | null; summary: boolean 
     );
   if (loadError) return <div className="note" role="alert">{loadError}</div>;
   if (!progress || scenarios.length < SC_COUNT) return <p className="muted">Loading your progress...</p>;
-
   if (summary) return <SoloSummary progress={progress} />;
   if (step == null) return null;
   const i = step >= 0 && step < SC_COUNT ? step : 0;
-  return <SoloScenario key={i} i={i} progress={progress} reload={load} />;
+  // Mark a scenario as submitted right away so pips and the banner show "grading" before the refetch lands.
+  const markSubmitted = (k: number, id: string, prompt: string) =>
+    setProgress((p) => {
+      if (!p) return p;
+      const stub = { id, scenario_id: p.scenarios[k].scenario_id, status: "queued", prompt, percent: null, queue_position: 0 } as Submission;
+      const scenarios = p.scenarios.map((s, j) => (j === k ? { ...s, latest: stub, attempts_left: 0 } : s));
+      return { ...p, scenarios };
+    });
+  return <SoloScenario key={i} i={i} progress={progress} reload={load} markSubmitted={markSubmitted} />;
 }
 
 function Pips({ progress, i }: { progress: Progress; i: number }) {
+  const { subs } = useApp();
   return (
     <nav className="pips" aria-label="Scenarios">
-      {progress.scenarios.map((s, k) => (
-        <button
-          key={s.scenario_id}
-          type="button"
-          className={"pip" + (k === i ? " on" : "") + (s.best ? " done" : "")}
-          aria-current={k === i ? "step" : undefined}
-          aria-label={`Scenario ${k + 1}${s.best ? `, best ${s.best.percent}%` : ""}`}
-          onClick={() => navigate("/play?s=" + (k + 1))}
-        >
-          {s.best ? (s.best.is_estimate ? "~" : "") + s.best.percent : k + 1}
-        </button>
-      ))}
-      <button type="button" className="pip sum" onClick={() => navigate("/play/summary")}>
+      {progress.scenarios.map((s, k) => {
+        const latest = s.latest ? (subs[s.latest.id] ?? s.latest) : null;
+        const graded = isGraded(latest) ? latest : null;
+        const pending = latest && !graded;
+        return (
+          <button
+            key={s.scenario_id}
+            type="button"
+            className={"pip" + (k === i ? " on" : "") + (graded ? " done" : "") + (pending ? " pending" : "")}
+            aria-current={k === i ? "step" : undefined}
+            aria-label={`Scenario ${k + 1}${graded ? `, ${graded.percent}%` : pending ? ", grading" : ""}`}
+            onClick={() => navigate("/play?s=" + (k + 1))}
+          >
+            {graded ? (graded.is_estimate ? "~" : "") + graded.percent : pending ? <span className="dots" aria-hidden="true" /> : k + 1}
+          </button>
+        );
+      })}
+      <button type="button" className={"pip sum" + (i === -1 ? " on" : "")} onClick={() => navigate("/play/summary")}>
         Results
       </button>
     </nav>
   );
 }
 
-function SoloScenario({ i, progress, reload }: { i: number; progress: Progress; reload: () => void }) {
-  const { scenarios } = useApp();
+/** "Grading in the background" banner for solo prompts still in flight. */
+function BackgroundBanner({ progress }: { progress: Progress }) {
+  const { subs } = useApp();
+  const n = progress.scenarios.filter((s) => s.latest && (subs[s.latest.id] ?? s.latest).status !== "graded").length;
+  if (!n) return null;
+  return (
+    <div className="bg-banner" role="status">
+      <span className="spinner" aria-hidden="true" />
+      <span>
+        Grading {n} prompt{n === 1 ? "" : "s"} in the background. Keep going; scores pop up when they are ready.
+      </span>
+    </div>
+  );
+}
+
+function SoloScenario({
+  i,
+  progress,
+  reload,
+  markSubmitted,
+}: {
+  i: number;
+  progress: Progress;
+  reload: () => void;
+  markSubmitted: (k: number, id: string, prompt: string) => void;
+}) {
+  const { scenarios, track } = useApp();
   const sc = scenarios[i];
   const sp = progress.scenarios[i];
-  const latestPending = sp.latest && sp.latest.status !== "graded" ? sp.latest.id : null;
-  const [pendingId, setPendingId] = useState<string | null>(latestPending);
-  const [shown, setShown] = useState<Graded | null>(null);
-  const [compose, setCompose] = useState(false);
+  const live = useSubmission(sp.latest?.id ?? null);
+  const latest: Submission | null = live ?? sp.latest;
   const { busy, error, run } = useAction();
   const draftKey = "solo:" + sc.id;
-
-  const { sub, error: pollError } = useGrading(pendingId, (s) => {
-    if (isGraded(s)) setShown(s);
-    setPendingId(null);
-    setCompose(false);
-    reload();
-  });
+  const scored = progress.scenarios.filter((s) => s.latest).length;
+  const closed = !progress.play_open
+    ? "Play is closed right now. Check back when the club opens it again."
+    : !progress.season_active
+      ? "This season has ended."
+      : progress.daily_left <= 0
+        ? "You have reached today's grading limit. Come back tomorrow."
+        : "";
+  const next = nextOpen(progress, i);
+  const nextLabel = next === "/play/summary" ? "See my results" : "Next scenario";
 
   const submit = (text: string) =>
     run(async () => {
       const r = await api.submit(sc.id, text);
       clearDraft(draftKey);
-      setShown(null);
-      setPendingId(r.submission_id);
+      markSubmitted(i, r.submission_id, text);
+      track(r.submission_id);
+      reload();
+      navigate(nextOpen(progress, i, i));
     });
 
-  const scored = progress.scenarios.filter((s) => s.best).length;
-  const left = sp.attempts_left;
-  const closed = !progress.play_open ? "Play is closed right now. Check back when the club opens it again." : !progress.season_active ? "This season has ended." : progress.daily_left <= 0 ? "You have reached today's grading limit. Come back tomorrow." : "";
-  const result = shown ?? (isGraded(sp.best) ? sp.best : null);
-  const last = i === SC_COUNT - 1;
-
   let body;
-  if (pendingId) body = <GradingView sub={sub} error={pollError} />;
-  else if (result && !compose)
+  if (isGraded(latest))
     body = (
       <>
-        <ResultView res={result} label={shown ? "Your score for this scenario" : "Your best score for this scenario"} />
-        {shown && sp.best && sp.best.id !== shown.id && (
-          <p className="muted">Your best on this scenario is still {sp.best.percent}%. Only your best counts.</p>
-        )}
-        <div className="actions">
-          <button className="btn block" type="button" onClick={() => navigate(last ? "/play/summary" : "/play?s=" + (i + 2))}>
-            {last ? "See my results" : "Next scenario"}
-          </button>
-          {left > 0 ? (
-            <button className="btn alt block" type="button" disabled={!!closed} onClick={() => (setShown(null), setCompose(true))}>
-              Try again ({left} left)
-            </button>
-          ) : (
-            <p className="muted center">You have used all 3 tries on this scenario. Your best score counts.</p>
-          )}
-        </div>
+        <ResultView res={latest} />
+        <button className="btn block" type="button" onClick={() => navigate(next)}>
+          {nextLabel}
+        </button>
+      </>
+    );
+  else if (latest)
+    body = (
+      <>
+        <GradingView sub={latest} background />
+        <button className="btn block" type="button" onClick={() => navigate(next)}>
+          {nextLabel}
+        </button>
       </>
     );
   else
     body = (
       <Composer
         draftKey={draftKey}
-        note={left === 3 ? "You get 3 tries per scenario. Your best score counts." : `${left} of 3 tries left. Your best score counts.`}
+        note="One try per scenario, so make it count. You can move on while it is graded."
         busy={busy}
         error={error}
-        disabled={left <= 0 ? "You have used all 3 tries on this scenario." : closed}
+        disabled={closed}
         onSubmit={submit}
       />
     );
@@ -138,6 +179,7 @@ function SoloScenario({ i, progress, reload }: { i: number; progress: Progress; 
     <>
       <Bar pct={(scored / SC_COUNT) * 100} />
       <Pips progress={progress} i={i} />
+      <BackgroundBanner progress={progress} />
       <ScenarioBlock s={sc} />
       <div className="sp" />
       {body}
@@ -146,28 +188,35 @@ function SoloScenario({ i, progress, reload }: { i: number; progress: Progress; 
 }
 
 function SoloSummary({ progress }: { progress: Progress }) {
-  const { me, scenarios } = useApp();
-  const results = progress.scenarios.map((s) => (isGraded(s.best) ? s.best : null));
-  const done = results.filter(Boolean).length;
+  const { me, scenarios, subs } = useApp();
+  const latest = progress.scenarios.map((s) => (s.latest ? (subs[s.latest.id] ?? s.latest) : null));
+  const results = latest.map((s) => (isGraded(s) ? s : null));
+  const pending = latest.map((s) => !!s && !isGraded(s));
+  const submitted = latest.filter(Boolean).length;
+  const graded = results.filter(Boolean).length;
+  const waiting = pending.filter(Boolean).length;
   return (
     <>
       <Pips progress={progress} i={-1} />
+      <BackgroundBanner progress={progress} />
       <h1>Your results</h1>
       <p className="lead">
-        {done === SC_COUNT
+        {graded === SC_COUNT
           ? `Nice work, ${me?.nickname}. Here is how your prompts did across all six scenarios.`
-          : `${done} of 6 scenarios done, ${me?.nickname}. Finish all six to get ranked on the leaderboard.`}
+          : submitted === SC_COUNT
+            ? `All six submitted, ${me?.nickname}. ${waiting} still grading; this page updates on its own.`
+            : `${submitted} of 6 scenarios done, ${me?.nickname}. Finish all six to get ranked on the leaderboard.`}
       </p>
-      <SummaryView scenarios={scenarios} results={results} />
+      <SummaryView scenarios={scenarios} results={results} pending={pending} />
       <p className="season-total">
         Season score: <b>{progress.total}</b> / 600
       </p>
-      {done < SC_COUNT && (
-        <button className="btn block" type="button" onClick={() => navigate("/play?s=" + (results.findIndex((r) => !r) + 1))}>
+      {submitted < SC_COUNT && (
+        <button className="btn block" type="button" onClick={() => navigate("/play?s=" + (latest.findIndex((r) => !r) + 1))}>
           Keep playing
         </button>
       )}
-      <button className={"btn block" + (done < SC_COUNT ? " alt" : "")} type="button" onClick={() => navigate("/board")}>
+      <button className={"btn block" + (submitted < SC_COUNT ? " alt" : "")} type="button" onClick={() => navigate("/board")}>
         View the leaderboard
       </button>
       <button className="btn alt block" type="button" onClick={() => navigate("/")}>
