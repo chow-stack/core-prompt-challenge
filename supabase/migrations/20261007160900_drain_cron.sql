@@ -15,7 +15,7 @@ select cron.schedule(
   '* * * * *',
   $$
   select net.http_post(
-    url := 'https://rndukbzegenpextindwd.supabase.co/functions/v1/drain-queue',
+    url := 'https://rndukbzegenpextindwd.supabase.co/functions/v1/drain-queue', -- replace with your own project URL
     headers := jsonb_build_object('Content-Type', 'application/json',
       'x-drain-token', (select decrypted_secret from vault.decrypted_secrets where name = 'drain_token')),
     body := '{}'::jsonb,

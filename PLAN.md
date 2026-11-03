@@ -38,7 +38,7 @@ Prototype facts the implementer must preserve (all in `reference/artifact-origin
 ## 2. Decisions (final)
 
 1. **Grader LLM: Google AI Studio (Gemini API), free tier.** Models `gemini-3.5-flash-lite` (primary) and `gemini-3.1-flash-lite` (secondary/fallback). Both verified as Stable on Google's model page on 2026-10-07. The Anthropic API is **not** used.
-2. **Supabase:** a **new** project (not the `imposter-llm` one). Name it `core-prompt-challenge`. The `PropWholesaler` project is paused; check the org's free-project slot count first and stop and ask Caio if creating a project would incur cost (use the Supabase MCP `get_cost` then `confirm_cost`).
+2. **Supabase:** a **new** project (not the `imposter-llm` one). Name it `core-prompt-challenge`. Check the org's free-project slot count first and stop and ask Caio if creating a project would incur cost (use the Supabase MCP `get_cost` then `confirm_cost`).
 3. **Attempts:**
    - **Live room:** exactly one graded attempt per scenario per player per room.
    - **Season (solo) board:** up to **3 graded attempts per scenario per player per season**, best score counts.
